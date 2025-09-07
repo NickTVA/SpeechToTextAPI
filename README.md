@@ -138,6 +138,6 @@ The API provides detailed error messages for common issues:
 
 ## Requirements
 
-- Python 3.8+
-- CUDA-capable GPU (recommended for better performance)
+- Python 3.8 - 3.11
+- CUDA-capable GPU (recommended for better performance)  Need 6GB VRAM for default "medium" model
 - 4GB+ RAM minimum
