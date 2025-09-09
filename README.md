@@ -18,7 +18,19 @@ git clone <repository-url>
 cd SpeechToTextAPI
 ```
 
-2. Install dependencies:
+2. Create and activate a virtual environment:
+```bash
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment (Linux/Mac)
+source venv/bin/activate
+
+# Activate virtual environment (Windows)
+venv\Scripts\activate
+```
+
+3. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
