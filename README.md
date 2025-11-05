@@ -32,6 +32,8 @@ venv\Scripts\activate
 
 3. Install dependencies:
 ```bash
+audo apt update
+sudo apt install ffmpeg
 pip install -r requirements.txt
 ```
 
