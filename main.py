@@ -45,8 +45,8 @@ async def root():
         "model": "whisper-medium"
     }
 
-@app.post("/transcribe")
-async def transcribe_audio(file: bytes = File(...)):
+@app.post("/transcribe/wav")
+async def transcribe_wav_audio(file: bytes = File(...)):
     start_time = time.time()
     request_id = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{int(time.time() * 1000) % 1000}"
 
@@ -126,6 +126,80 @@ async def transcribe_audio(file: bytes = File(...)):
             "text": result["text"],
             "language": result.get("language", "unknown")
         })
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[{request_id}] Transcription error: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
+
+@app.post("/transcribe/ogg")
+async def transcribe_ogg_audio(file: bytes = File(...)):
+    start_time = time.time()
+    request_id = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{int(time.time() * 1000) % 1000}"
+
+    try:
+        # Log incoming request
+        file_size = len(file) if file else 0
+        logger.info(f"[{request_id}] Received OGG transcription request - File size: {file_size:,} bytes")
+
+        if not file:
+            logger.warning(f"[{request_id}] No audio data provided")
+            raise HTTPException(status_code=400, detail="No audio data provided")
+
+        # Validate OGG file header
+        if len(file) < 4 or file[:4] != b'OggS':
+            logger.warning(f"[{request_id}] Invalid OGG file - missing OggS header")
+            raise HTTPException(status_code=400, detail="Invalid OGG file format")
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".ogg") as tmp_file:
+            tmp_file.write(file)
+            tmp_file_path = tmp_file.name
+
+        try:
+            # Log start of transcription
+            logger.info(f"[{request_id}] Starting transcription of OGG file...")
+            transcription_start = time.time()
+
+            model = load_model()
+            result = model.transcribe(tmp_file_path)
+
+            transcription_time = time.time() - transcription_start
+
+            # Log transcription results
+            transcribed_text = result["text"]
+            detected_language = result.get("language", "unknown")
+            word_count = len(transcribed_text.split()) if transcribed_text else 0
+
+            logger.info(f"[{request_id}] Transcription completed - "
+                       f"Language: {detected_language}, "
+                       f"Word count: {word_count}, "
+                       f"Transcription time: {transcription_time:.2f}s")
+
+            # Log the actual transcription (truncate if too long for logging)
+            if transcribed_text:
+                log_text = transcribed_text[:500] + "..." if len(transcribed_text) > 500 else transcribed_text
+                logger.info(f"[{request_id}] Transcribed text: {log_text.strip()}")
+            else:
+                logger.warning(f"[{request_id}] Empty transcription result")
+
+            import os
+            os.unlink(tmp_file_path)
+
+            # Log total processing time
+            total_time = time.time() - start_time
+            logger.info(f"[{request_id}] Request completed - Total processing time: {total_time:.2f}s")
+
+            return JSONResponse(content={
+                "text": result["text"],
+                "language": result.get("language", "unknown")
+            })
+
+        except Exception as e:
+            import os
+            if os.path.exists(tmp_file_path):
+                os.unlink(tmp_file_path)
+            raise e
 
     except HTTPException:
         raise

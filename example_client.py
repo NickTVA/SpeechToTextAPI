@@ -16,7 +16,7 @@ def transcribe_audio(audio_file_path, api_url="http://localhost:8001"):
             print(f"Sending {audio_file_path} to API...")
             
             response = requests.post(
-                f"{api_url}/transcribe",
+                f"{api_url}/transcribe/wav",
                 data=audio_file.read(),
                 headers={'Content-Type': 'application/octet-stream'}
             )
